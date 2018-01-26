@@ -1,5 +1,6 @@
 import os
 import re
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -13,7 +14,7 @@ def get_top100_list(refresh_html=False):
     :return: 곡 정보 dict의 list
     """
     # utils가 있는
-    path_module = os.path.abspath(__file__)
+    path_module = os.path.abspath(__name__)
     print(f'path_module: \n{path_module}')
 
     # 프로젝트 컨테이너 폴더 경로
@@ -54,14 +55,12 @@ def get_top100_list(refresh_html=False):
     # 3. BeautifulSoup을 사용해 HTML을 탐색하며 dict의 리스트를(result) 생성, 마지막에 리턴
 
     result = []
-    for tr in soup.find_all('tr', class_=['lst50', 'lst100'] ):
+    for tr in soup.find_all('tr', class_=['lst50', 'lst100']):
         rank = tr.find('span', class_='rank').text
         title = tr.find('div', class_='rank01').find('a').text
         artist = tr.find('div', class_='rank02').find('a').text
         album = tr.find('div', class_='rank03').find('a').text
         url_img_cover = tr.find('a', class_='image_typeAll').find('img').get('src')
-        song_tag = tr['data-song-no']
-
         # http://cdnimg.melon.co.kr/cm/album/images/101/28/855/10128855_500.jpg/melon/resize/120/quality/80/optimize
         # .* -> 임의 문자의 최대 반복
         # \. -> '.' 문자
@@ -75,38 +74,5 @@ def get_top100_list(refresh_html=False):
             'url_img_cover': url_img_cover,
             'artist': artist,
             'album': album,
-            'song_tag' : song_tag,
         })
     return result
-
-
-def get_song_detail(song_id):
-    # utils가 있는
-    path_module = os.path.abspath(__file__)
-    print(f'path_module: \n{path_module}')
-
-    # 프로젝트 컨테이너 폴더 경로
-    root_dir = os.path.dirname(path_module)
-    print(f'root_dir: \n{root_dir}')
-
-    # data/ 폴더 경로
-    path_data_dir = os.path.join(root_dir, 'data')
-    print(f'path_data_dir: \n{path_data_dir}')
-
-    # 만약에 path_data_dir에 해당하는 폴더가 없을 경우 생성해준다
-    os.makedirs(path_data_dir, exist_ok=True)
-
-    url_chart_realtime = 'http://www.melon.com/song/detail.htm?songId='+str(song_id)
-
-
-    print(url_chart_realtime)
-    """
-    song_id에 해당하는 곡 정보 dict를 반환
-    위의 get_top100_list의 각 곡 정보에도 song_id가 들어가도록 추가
-
-    http://www.melon.com/song/detail.htm?songId=30755375
-    위 링크를 참조
-
-    :param song_id: 곡 정보 dict
-    :return:
-    """

@@ -23,7 +23,7 @@ rank_list = soup.findAll('tr', {"class": "lst50"})
 
 # print(rank_list[0].findAll('td')[1].div.span.text)
 # print(rank_list[0].findAll('td')[5].div.div.findAll('div')[0].span.text)
-# print(rank_list[0].findAll('td')[5].div.div.findAll('div')[1].span.text)
+# print(rank_list[0].findAll(v'td')[5].div.div.findAll('div')[1].span.text)
 # print(rank_list[0].findAll('td')[6].div.div.text)
 # print(rank_list[0].findAll('td')[3].div.a.find('img').get('src'))
 
