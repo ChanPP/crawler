@@ -7,3 +7,4 @@ if __name__ == '__main__':
 
     # 예제
     result_detail = get_song_detail('30781481')
+

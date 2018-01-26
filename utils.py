@@ -108,6 +108,26 @@ def get_song_detail(song_id, refresh_html=False):
             }
             response = requests.get(url, params)
             source = response.text
-            f.write(source)
+            # 만약 받은 파일의 길이가 지나치게 짧을 경우 예외를 일으키고
+            # 예외 블럭에서 기록한 파일을 삭제하도록 함
+            file_length = f.write(source)
+            if file_length < 10:
+                raise ValueError('파일이 너무 짧습니다')
     except FileExistsError:
         print(f'"{file_path}" file is already exists!')
+    except ValueError:
+        # 파일이 너무 짧은 경우
+        os.remove(file_path)
+        return
+
+    source = open(file_path, 'rt').read()
+    soup = BeautifulSoup(source, 'lxml')
+    # div.song_name의 자식 strong요소의 바로 다음 형제요소의 값을 양쪽 여백을 모두 잘라낸다
+    # 아래의 HTML과 같은 구조
+    # <div class="song_name">
+    #   <strong>곡명</strong>
+    #
+    #              Heart Shaker
+    # </div>
+    title = soup.find('div', class_='song_name').strong.next_sibling.strip()
+    # title = soup.find('div', class_='song_name').get_text(strip=True)[2:]
