@@ -1,7 +1,8 @@
 import os
 import re
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
+
 
 # utils가 있는
 PATH_MODULE = os.path.abspath(__file__)
@@ -62,11 +63,11 @@ def get_top100_list(refresh_html=False):
         artist = tr.find('div', class_='rank02').find('a').text
         album = tr.find('div', class_='rank03').find('a').text
         url_img_cover = tr.find('a', class_='image_typeAll').find('img').get('src')
-        # song_id1 = tr['data-song-no']
+        # song_id = tr['data-song-no']
         song_id_href = tr.find('a', class_='song_info').get('href')
         song_id = re.search(r"\('(\d+)'\)", song_id_href).group(1)
 
-        # http://cdnimg.melon.co.kr/cm/album/images/101/28/855/10128855_500.jpg/melon/resize/120/quality/80/optimize
+        # http://cdnimg.melo4teeedsfaraszxfgvrrr33r3rn.co.kr/cm/album/images/101/28/855/10128855_500.jpg/melon/resize/120/quality/80/optimize
         # .* -> 임의 문자의 최대 반복
         # \. -> '.' 문자
         # .*?/ -> '/'이 나오기 전까지의 최소 반복
@@ -129,5 +130,37 @@ def get_song_detail(song_id, refresh_html=False):
     #
     #              Heart Shaker
     # </div>
-    title = soup.find('div', class_='song_name').strong.next_sibling.strip()
-    # title = soup.find('div', class_='song_name').get_text(strip=True)[2:]
+    div_entry = soup.find('div', class_='entry')
+    title = div_entry.find('div', class_='song_name').strong.next_sibling.strip()
+    artist = div_entry.find('div', class_='artist').get_text(strip=True)
+    # 앨범, 발매일, 장르...에 대한 Description list
+    dl = div_entry.find('div', class_='meta').find('dl')
+    # isinstance(인스턴스, 클래스(타입))
+    # items = ['앨범', '앨범명', '발매일', '발매일값', '장르', '장르값']
+    items = [item.get_text(strip=True) for item in dl.contents if not isinstance(item, str)]
+    it = iter(items)
+    description_dict = dict(zip(it, it))
+
+    album = description_dict.get('앨범')
+    release_date = description_dict.get('발매일')
+    genre = description_dict.get('장르')
+
+    div_lyrics = soup.find('div', id='d_video_summary')
+    lyrics_list = [item.strip() for item in div_lyrics if isinstance(item, NavigableString)]
+    lyrics = '\n'.join(lyrics_list)
+
+    return {
+        'title': title,
+        'artist': artist,
+        'album': album,
+        'release_date': release_date,
+        'genre': genre,
+        'lyrics': lyrics,
+        # 작사/작곡은 주말 숙제 포함
+        'producers': {
+            '작사': ['별들의 전쟁'],
+            '작곡': ['David Amber', 'Sean Alexander'],
+            '편곡': ['Avenue52'],
+        },
+    }
+
