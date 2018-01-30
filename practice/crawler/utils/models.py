@@ -79,16 +79,19 @@ class MelonCrawler:
 
 
 class Song:
-    def __init__(self, song_id, title, artist, album):
-        self.song_id = song_id
-        self.title = title
-        self.artist = artist
-        self.album = album
+    def __init__(self, artist_id):
+        # self.song_id = None
+        self._artist_id = artist_id
+
+        self.title = None
+        self.artist = None
+        self.album = None
 
         self._release_date = None
         self._lyrics = None
         self._genre = None
         self._producers = None
+        self._artist_detail = None
 
     def __str__(self):
         return f'{self.title} (아티스트: {self.artist}, 앨범: {self.album})'
@@ -110,6 +113,7 @@ class Song:
                 }
                 response = requests.get(url, params)
                 source = response.text
+                # print(source)
                 # 만약 받은 파일의 길이가 지나치게 짧을 경우 예외를 일으키고
                 # 예외 블럭에서 기록한 파일을 삭제하도록 함
                 file_length = f.write(source)
@@ -164,3 +168,82 @@ class Song:
         self._genre = genre
         self._lyrics = lyrics
         self._producers = {}
+
+    @property
+    def lyrics(self):
+        # 만약 가지고 있는 가사정보가 없다면
+        if not self._lyrics:
+            # 받아와서 할당
+            self.get_detail()
+        # 그리고 가사정보 출력
+        return self._lyrics
+
+    def search_artist(self, refresh_html=False):
+        file_path = os.path.join(DATA_DIR, f'artist_detail_{self._artist_id}.html')
+
+        try:
+            file_mode = "wt" if refresh_html else 'xt'
+            with open(file_path, file_mode, encoding='utf8') as f:
+                # url과 parameter구분해서 requests사용
+                url = f'https://www.melon.com/search/artist/index.htm?q={self._artist_id}'
+                # print(url)
+                params = {
+                    'artist_id': self._artist_id,
+                }
+                response = requests.get(url, params)
+                # print(response)
+                source = response.text
+                # print(source)
+                # 만약 받은 파일의 길이가 지나치게 짧을 경우 예외를 일으키고
+                # 예외 블럭에서 기록한 파일을 삭제하도록 함
+                file_length = f.write(source)
+                # print(len(file_length))
+                if file_length < 10:
+                    raise ValueError('파일이 너무 짧습니다')
+        except FileExistsError:
+            print(f'"{file_path}" file is already exists!')
+        except ValueError:
+            # 파일이 너무 짧은 경우
+            os.remove(file_path)
+            return
+
+        # url = f'https://www.melon.com/search/artist/index.htm?q={self}'
+        # source = requests.get(url)
+        # soup = BeautifulSoup(source.text, 'lxml')
+        source12 = open(file_path, 'rt').read()
+        # print(source12)
+        soup = BeautifulSoup(source12, 'lxml')
+        # print(soup)
+        artist_info = soup.findAll('div', {"class": "wrap_atist12"})
+        # print(artist_info)
+
+        # artist_name = artist_info[0].div.a.text
+        # artist_gender = artist_info[0].div.dl.dd.text.strip()
+        # artist_genre = artist_info[0].div.dl.div.text
+        # artist_hitsong = artist_info[0].div.dl.find("span", {"class" : "songname12"}).text
+        # print(artist_hitsong)
+        artist_title1 = []
+        for artist in artist_info:
+            artist_name = artist.div.a.text
+            artist_gender = artist.div.dl.dd.text.strip()
+            artist_genre = artist.div.dl.div.text.strip()
+            artist_hitsong = artist.div.dl.find("span", {"class": "songname12"}).text
+
+            artist_title1.append({
+                "이름": artist_name,
+                "성별": artist_gender,
+                "장르": artist_genre,
+                "대표곡": artist_hitsong,
+            }
+            )
+        for i in artist_title1:
+            print(i)
+
+    # @property
+    # def artist_id(self):
+    #     # 만약 가지고 있는 가사정보가 없다면
+    #     if not self.artist_id:
+    #         # 받아와서 할당
+    #         self.search_artist()
+    #     # 그리고 가사정보 출력
+    #     return self.artist_id
